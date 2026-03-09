@@ -87,29 +87,38 @@ function Build-SidebarStructure {
 function Write-SidebarContent {
     param(
         [hashtable]$Structure,
-        [int]$IndentLevel = 0
+        [int]$HeaderLevel = 2,
+        [string]$ParentPath = ""
     )
     
     $output = @()
-    $indent = "  " * $IndentLevel
     
     # Sort keys alphabetically, but process _pages last
     $keys = $Structure.Keys | Where-Object { $_ -ne '_pages' } | Sort-Object
     
     foreach ($key in $keys) {
         $displayName = Convert-ToTitleCase $key
-        $output += "$indent- **$displayName**"
+        $headerPrefix = "#" * $HeaderLevel
         
-        # Recursively process nested structure
-        $nestedOutput = Write-SidebarContent -Structure $Structure[$key] -IndentLevel ($IndentLevel + 1)
-        $output += $nestedOutput
-    }
-    
-    # Add pages at this level
-    if ($Structure.ContainsKey('_pages')) {
-        $pages = $Structure['_pages'] | Sort-Object -Property Title
-        foreach ($page in $pages) {
-            $output += "$indent- [$($page.Title)]($($page.Link))"
+        # Add header for this category
+        $output += ""
+        $output += "$headerPrefix $displayName"
+        $output += ""
+        
+        # Check if this level has pages
+        if ($Structure[$key].ContainsKey('_pages')) {
+            $pages = $Structure[$key]['_pages'] | Sort-Object -Property Title
+            foreach ($page in $pages) {
+                $output += "- [$($page.Title)]($($page.Link))"
+            }
+        }
+        
+        # Check if this level has subcategories (keys other than _pages)
+        $subKeys = $Structure[$key].Keys | Where-Object { $_ -ne '_pages' }
+        if ($subKeys.Count -gt 0) {
+            # Recursively process nested structure
+            $nestedOutput = Write-SidebarContent -Structure $Structure[$key] -HeaderLevel ($HeaderLevel + 1) -ParentPath "$ParentPath$key/"
+            $output += $nestedOutput
         }
     }
     
@@ -134,11 +143,12 @@ if ($null -eq $structure) {
 
 # Generate sidebar content
 $sidebarContent = @()
-$sidebarContent += "# Table of Contents"
+$sidebarContent += "# Documentation"
 $sidebarContent += ""
 $sidebarContent += Write-SidebarContent -Structure $structure
 $sidebarContent += ""
 $sidebarContent += "---"
+$sidebarContent += ""
 $sidebarContent += "_Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm')_"
 
 # Write to file
