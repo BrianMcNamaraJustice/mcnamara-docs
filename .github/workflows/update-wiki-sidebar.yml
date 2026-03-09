@@ -14,6 +14,9 @@ on:
     paths:
       - 'wiki/**/*.md'
 
+permissions:
+  contents: write
+
 jobs:
   update-sidebar:
     runs-on: windows-latest
@@ -29,6 +32,7 @@ jobs:
         with:
           repository: ${{ github.repository }}.wiki
           path: wiki-repo
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Generate sidebar
         shell: pwsh
