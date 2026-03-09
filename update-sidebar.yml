@@ -1,0 +1,51 @@
+# GitHub Actions Workflow for Auto-Generating Wiki Sidebar
+# 
+# To use this:
+# 1. Copy this file to: mcnamara-docs.wiki/.github/workflows/update-sidebar.yml
+# 2. Copy Generate-WikiSidebar.ps1 to: mcnamara-docs.wiki/scripts/Generate-WikiSidebar.ps1
+# 3. Update the script to use $PWD or current directory instead of parameters
+# 4. Commit and push both files
+#
+# The sidebar will auto-update on every push to the wiki
+
+name: Update Wiki Sidebar
+
+on:
+  push:
+    paths:
+      - '**.md'
+      - '!_Sidebar.md'
+  workflow_dispatch:
+
+jobs:
+  update-sidebar:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout wiki
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Generate sidebar
+        shell: pwsh
+        run: |
+          # Run the sidebar generation script
+          ./scripts/Generate-WikiSidebar.ps1 -WikiPath .
+      
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add _Sidebar.md
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to sidebar"
+          else
+            git commit -m "Auto-update sidebar [skip ci]"
+            git push
+            echo "Sidebar updated!"
+          fi
+
+# Note: [skip ci] prevents infinite loops since the commit won't trigger another workflow
