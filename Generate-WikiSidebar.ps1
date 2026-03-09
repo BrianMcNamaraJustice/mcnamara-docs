@@ -15,7 +15,7 @@
 #>
 
 param(
-    [string]$WikiPath = ".\wiki"
+    [string]$WikiPath = ".\mcnamara-docs.wiki"
 )
 
 # Repository URLs for reference

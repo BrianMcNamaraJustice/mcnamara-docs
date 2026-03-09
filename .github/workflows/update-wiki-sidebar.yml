@@ -1,0 +1,54 @@
+name: Update Wiki Sidebar
+
+on:
+  # Trigger when wiki pages are edited via GitHub UI
+  gollum:
+  
+  # Allow manual trigger
+  workflow_dispatch:
+  
+  # Run when we push certain files to main repo that should be in wiki
+  push:
+    branches:
+      - main
+    paths:
+      - 'wiki/**/*.md'
+
+jobs:
+  update-sidebar:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          path: main-repo
+      
+      - name: Checkout wiki repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki-repo
+      
+      - name: Generate sidebar
+        shell: pwsh
+        run: |
+          # Run the generation script
+          cd main-repo
+          ./Generate-WikiSidebar.ps1 -WikiPath ../wiki-repo
+      
+      - name: Commit and push sidebar
+        working-directory: wiki-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _Sidebar.md
+          
+          # Only commit if there are changes
+          if (git diff --staged --quiet) {
+            Write-Host "No changes to sidebar"
+          } else {
+            git commit -m "Auto-update sidebar [bot]"
+            git push
+            Write-Host "✅ Sidebar updated!"
+          }
