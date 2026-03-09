@@ -34,6 +34,21 @@ jobs:
           path: wiki-repo
           token: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Sync wiki files from main repo
+        shell: pwsh
+        run: |
+          # Copy markdown files from main repo wiki/ folder to wiki repo
+          $sourceFiles = Get-ChildItem -Path main-repo/wiki -Filter *.md -ErrorAction SilentlyContinue
+          if ($sourceFiles) {
+            Write-Host "Syncing wiki files from main repo..."
+            foreach ($file in $sourceFiles) {
+              Copy-Item $file.FullName -Destination wiki-repo/ -Force
+              Write-Host "  Copied: $($file.Name)"
+            }
+          } else {
+            Write-Host "No files to sync from main repo wiki/ folder"
+          }
+      
       - name: Generate sidebar
         shell: pwsh
         run: |
@@ -46,13 +61,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _Sidebar.md
+          git add .
           
           # Only commit if there are changes
           if (git diff --staged --quiet) {
-            Write-Host "No changes to sidebar"
+            Write-Host "No changes to wiki"
           } else {
-            git commit -m "Auto-update sidebar [bot]"
+            git commit -m "Auto-update wiki content and sidebar [bot]"
             git push
-            Write-Host "✅ Sidebar updated!"
+            Write-Host "✅ Wiki updated!"
           }
